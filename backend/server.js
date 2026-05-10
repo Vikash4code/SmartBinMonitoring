@@ -1,115 +1,61 @@
-require('dotenv').config();
-const express = require('express');
-const app = express();
-app.use(express.json());
+const express = require("express");
+
+const mongoose = require("mongoose");
 
 const cors = require("cors");
+
+require("dotenv").config();
+
+const authRoutes = require("./routes/authRoutes");
+
+const binRoutes = require("./routes/binRoutes");
+
+const app = express();
+
+const workerRoutes = require("./routes/workerRoutes");
+
+const vehicleRoutes = require("./routes/vehicleRoutes");
+
+const workerDashboardRoutes = require("./routes/workerDashboardRoutes");
+
+const historyRoutes = require(
+    "./routes/historyRoutes"
+);
+// MIDDLEWARE
 app.use(cors());
 
-const Bin = require('./models/Bin');
-const mongoose = require('mongoose');
+app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.log(err));
-app.get('/', (req, res) => {
-    res.send('Smart Bin API is running');
-});
 
-//to save bin
-app.post('/api/bin', async (req, res) => {
-    try {
-        const { binId, fillLevel } = req.body;
+// DATABASE CONNECTION
+mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log("MongoDB Connected");
+    })
+    .catch((error) => {
+        console.log(error);
+    });
 
-        if (binId === undefined || fillLevel === undefined) {
-            return res.status(400).json({
-                error: 'binId and fillLevel are required'
-            });
-        }
-        const newBin = new Bin({ binId, fillLevel });
-        await newBin.save();
 
-        res.status(201).json({
-            message: 'Data saved successfully',
-            data: newBin
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+// ROUTES
+app.use("/api/auth", authRoutes);
 
-//to delete bin
-app.delete("/api/bin/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
+app.use("/api/bin", binRoutes);
 
-        const deletedBin = await Bin.findByIdAndDelete(id);
+app.use("/api/workers", workerRoutes);
 
-        if (!deletedBin) {
-            return res.status(404).json({ message: "Bin not found" });
-        }
+app.use("/api/vehicles", vehicleRoutes);
 
-        res.json({ message: "Bin deleted successfully" });
+app.use("/api/worker-dashboard", workerDashboardRoutes);
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error deleting bin" });
-    }
-});
+app.use("/api/history", historyRoutes);
+// SERVER
+const PORT = process.env.PORT || 5000;
 
-app.get('/api/bin/latest', async (req, res) => {
-    try {
-        const latestBin = await Bin.findOne().sort({ timestamp: -1 });
-        if (!latestBin) {
-            return res.status(404).json({
-                message: 'No data found'
-            });
-        }
-        res.status(200).json(latestBin);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
-
-app.get("/api/bin/all", async (req, res) => {
-    try {
-        const bins = await Bin.find().sort({ timestamp: -1 });
-        res.json(bins);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching bins", error });
-    }
-});
-
-// ✏️ UPDATE BIN
-app.put("/api/bin/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { binId, fillLevel } = req.body;
-
-        const updatedBin = await Bin.findByIdAndUpdate(
-            id,
-            { binId, fillLevel },
-            { new: true }
-        );
-
-        if (!updatedBin) {
-            return res.status(404).json({ message: "Bin not found" });
-        }
-
-        res.json({
-            message: "Bin updated successfully",
-            data: updatedBin
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error updating bin" });
-    }
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
 
 
-app.listen(5000, () => {
-    console.log('Server running on port 5000');
-});
+
