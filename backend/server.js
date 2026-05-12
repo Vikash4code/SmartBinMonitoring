@@ -21,6 +21,15 @@ const workerDashboardRoutes = require("./routes/workerDashboardRoutes");
 const historyRoutes = require(
     "./routes/historyRoutes"
 );
+
+const dashboardRoutes = require(
+    "./routes/dashboardRoutes"
+);
+
+const path = require("path");
+
+const startBinSimulation =
+    require("./utils/binSimulator");
 // MIDDLEWARE
 app.use(cors());
 
@@ -50,8 +59,26 @@ app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/worker-dashboard", workerDashboardRoutes);
 
 app.use("/api/history", historyRoutes);
+
+app.use("/api/admin/dashboard", dashboardRoutes);
+
+app.use(
+    "/api/dashboard",
+    dashboardRoutes
+);
+
+app.use(
+    "/uploads",
+    express.static(
+        path.join(__dirname, "uploads")
+    )
+);
+
 // SERVER
 const PORT = process.env.PORT || 5000;
+
+// START BIN SIMULATION
+startBinSimulation();
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

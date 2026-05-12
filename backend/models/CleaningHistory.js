@@ -29,6 +29,10 @@ const cleaningHistorySchema =
             vehicleNumber: {
                 type: String,
             },
+            
+            cleaningImage: {
+                type: String,
+            },
 
             cleanedAt: {
                 type: Date,

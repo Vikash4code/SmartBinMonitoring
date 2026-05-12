@@ -19,6 +19,9 @@ const Vehicle = require("../models/Vehicle");
 const CleaningHistory = require(
     "../models/CleaningHistory"
 );
+const upload = require(
+    "../utils/upload"
+);
 
 
 // WORKER ONLY
@@ -28,85 +31,113 @@ router.use(roleMiddleware("worker"));
 
 
 // GET ASSIGNED BINS
-router.get("/assigned-bins", async (req, res) => {
+router.get(
+    "/assigned-bins",
+    async (req, res) => {
 
-    try {
+        try {
 
-        const bins = await Bin.find({
-            assignedWorker: req.user.id,
-        }).populate("assignedVehicle");
+            const bins =
+                await Bin.find({
+                    assignedWorker:
+                        req.user.id,
+                })
+                    .populate(
+                        "assignedVehicle"
+                    );
 
-        res.json(bins);
+            res.json(bins);
 
-    } catch (error) {
+        } catch (error) {
 
-        res.status(500).json({
-            message: error.message,
-        });
-    }
-});
-
-
-// MARK CLEANED
-router.put("/clean/:id", async (req, res) => {
-
-    try {
-
-        const bin = await Bin.findById(
-            req.params.id
-        )
-            .populate("assignedWorker")
-            .populate("assignedVehicle");
-
-
-        if (!bin) {
-            return res.status(404).json({
-                message: "Bin not found",
+            res.status(500).json({
+                message: error.message,
             });
         }
+    }
+);
+// MARK CLEANED
+router.put(
+    "/clean/:id",
+    upload.single("cleaningImage"),
+    async (req, res) => {
+
+        try {
+
+            const bin =
+                await Bin.findById(
+                    req.params.id
+                )
+                    .populate(
+                        "assignedWorker"
+                    )
+                    .populate(
+                        "assignedVehicle"
+                    );
 
 
-        // UPDATE BIN
-        bin.cleaned = true;
+            if (!bin) {
 
-        bin.fillLevel = 0;
+                return res.status(404).json({
+                    message: "Bin not found",
+                });
+            }
 
-        await bin.save();
+
+            // UPDATE BIN
+            bin.cleaned = true;
+
+            bin.fillLevel = 0;
+
+            await bin.save();
 
 
-        // CREATE HISTORY
-        const history =
-            new CleaningHistory({
-                bin: bin._id,
-                binId: bin.binId,
+            // CREATE HISTORY
+            const history =
+                new CleaningHistory({
 
-                worker: bin.assignedWorker?._id,
-                workerName:
-                    bin.assignedWorker?.name,
+                    bin: bin._id,
 
-                vehicle: bin.assignedVehicle?._id,
-                vehicleNumber:
-                    bin.assignedVehicle
-                        ?.vehicleNumber,
+                    binId: bin.binId,
 
-                cleanedAt: new Date(),
+                    worker:
+                        bin.assignedWorker?._id,
+
+                    workerName:
+                        bin.assignedWorker?.name,
+
+                    vehicle:
+                        bin.assignedVehicle?._id,
+
+                    vehicleNumber:
+                        bin.assignedVehicle
+                            ?.vehicleNumber ||
+                        "No Vehicle Assigned",
+
+                    cleaningImage:
+                        req.file
+                            ? `/uploads/${req.file.filename}`
+                            : "",
+
+                    cleanedAt: new Date(),
+                });
+
+            await history.save();
+
+
+            res.json({
+                message:
+                    "Bin cleaned successfully",
+                history,
             });
 
-        await history.save();
+        } catch (error) {
 
-
-        res.json({
-            message:
-                "Bin cleaned successfully",
-            history,
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        });
+            res.status(500).json({
+                message: error.message,
+            });
+        }
     }
-});
+);
 
 module.exports = router;
