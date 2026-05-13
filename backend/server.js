@@ -30,6 +30,11 @@ const path = require("path");
 
 const startBinSimulation =
     require("./utils/binSimulator");
+
+const issueRoutes =
+    require(
+        "./routes/issueRoutes"
+    );
 // MIDDLEWARE
 app.use(cors());
 
@@ -72,6 +77,11 @@ app.use(
     express.static(
         path.join(__dirname, "uploads")
     )
+);
+
+app.use(
+    "/api/issues",
+    issueRoutes
 );
 
 // SERVER

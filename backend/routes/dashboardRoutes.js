@@ -58,6 +58,12 @@ router.get("/stats", async (req, res) => {
     const totalVehicles =
       await Vehicle.countDocuments();
 
+    // ALERT BINS
+    const alertBins =
+      await Bin.find({
+        fillLevel: { $gte: 90 },
+      });
+
     // RECENT HISTORY
     const recentHistory =
       await CleaningHistory.find()
@@ -68,11 +74,19 @@ router.get("/stats", async (req, res) => {
 
 
     res.json({
+
       totalBins,
+
       fullBins,
+
       cleanedBins,
+
       totalWorkers,
+
       totalVehicles,
+
+      alertBins,
+
       recentHistory,
     });
 
